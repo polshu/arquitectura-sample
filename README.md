@@ -689,3 +689,131 @@ Indeura.sln, proyect.csproj        ← solución y proyecto .NET
 README.md                          ← este archivo
 CLAUDE.md                          ← instrucciones para Claude Code
 ```
+
+---
+
+## 10. Ejercicio: migrar un Repository de Postgres a SQL Server
+
+Este apartado es para discutir en clase. La consigna: hoy los
+Repositories (`GameRepository` y `UserRepository`) hablan contra
+`DBPostgres`. **¿Qué hay que cambiar para que hablen contra `DBMssql`?**
+
+La respuesta corta ya está en la sección 2.4: no alcanza con cambiar
+el tipo del field. Acá lo desglosamos línea por línea para que quede
+claro qué parte del Repository es "hablar con el motor" y qué parte
+es "hablar con el dialecto SQL".
+
+### 10.1 Cambios en `GameRepository.cs`
+
+**1. Cambiar el tipo del field y el `new`.**
+
+```csharp
+private readonly DBPostgres _db;      // → DBMssql
+_db = new DBPostgres();               // → new DBMssql()
+```
+
+Como las dos clases DB tienen la **misma API pública** (`Query`,
+`QueryFirst`, `Execute`, `ExecuteScalar`), ninguno de los métodos del
+Repository tiene que cambiar su forma de llamar. Sólo cambia el tipo
+concreto que se instancia. Actualizar también el comentario de arriba
+del constructor que ejemplifica con `DBPostgres`.
+
+**2. Reemplazar `ILIKE` por `LIKE`** (método `GetByName`).
+
+```csharp
+// Postgres
+string sql = "SELECT * FROM Game WHERE GameName ILIKE @Name;";
+
+// SQL Server
+string sql = "SELECT * FROM Game WHERE GameName LIKE @Name;";
+```
+
+`ILIKE` no existe en SQL Server. `LIKE` en SQL Server es
+case-insensitive por defecto (depende del *collation* de la columna,
+pero los típicos lo son), así que el comportamiento queda equivalente.
+
+**3. Repensar el comentario de `CountByPublisher`.**
+
+El Repository tiene un comentario que dice que `COUNT(*)` en Postgres
+vuelve como `long` (Int64). En SQL Server `COUNT(*)` devuelve `int`
+directamente (para `long` existe `COUNT_BIG(*)`). La línea de código
+con `Convert.ToInt32(scalarResult)` sigue funcionando, pero el
+comentario queda técnicamente desactualizado.
+
+### 10.2 Cambios en `UserRepository.cs`
+
+**1. Cambiar el tipo del field y el `new`** (igual que el anterior,
+incluyendo el comentario del constructor).
+
+**2. Decidir qué hacer con `"User"`.**
+
+Todas las queries escapan la palabra reservada con comillas dobles:
+`FROM "User"`. Esto **funciona en SQL Server** siempre que
+`QUOTED_IDENTIFIER` esté en `ON` (el default), así que técnicamente
+no hace falta tocarlo.
+
+Ahora bien, la convención "nativa" de SQL Server son los **corchetes**:
+
+```sql
+-- Postgres
+FROM "User"
+
+-- SQL Server (convención)
+FROM [User]
+```
+
+Si el objetivo pedagógico es enseñar la sintaxis propia de cada
+motor, conviene cambiarlo a `[User]` en las 6 queries que tocan la
+tabla (`Insert`, `Update`, `GetById`, `GetByUserName`, `GetByEmail`,
+`CountByEmail`). Si el objetivo es mantener portabilidad, las
+comillas dobles alcanzan. Es una discusión de **consistencia de
+dialecto** más que de corrección.
+
+### 10.3 Lo que NO hay que tocar
+
+- **Los helpers `BuildParametersFromX` y `BuildXFromRow`.** El contrato
+  `Dictionary<string, object?>` con claves case-insensitive es idéntico
+  en las dos clases DB.
+- **El manejo de `Verified` como 0/1.** En SQL Server la columna se
+  guarda como `bit`, que convierte bien con `Convert.ToBoolean` ida y
+  vuelta.
+- **Los Services y Controllers.** No conocen la clase DB: sólo al
+  Repository. La migración no se ve desde las capas de arriba.
+- **No hay `LIMIT` ni `TOP` en las queries actuales**, así que esa
+  traducción no aplica hoy. Si mañana se agrega paginado, reaparece.
+
+### 10.4 Requisito externo al código
+
+`appsettings.json` tiene que tener `Database:SqlServer:ConnectionString`
+apuntando a una instancia real. `DBMssql` ya la lee vía
+`DBConfig.GetSqlServerConnectionString()`, así que ese lado está
+listo.
+
+Lo que **no** es automático: el esquema de tablas (`Game`, `User`,
+con sus columnas, tipos y constraints) tiene que existir en esa base.
+El script `setup_postgres.sql` no es portable tal como está — habría
+que escribir un `setup_mssql.sql` equivalente (tipos distintos,
+`IDENTITY` vs `SERIAL`, etc.). La migración de DDL queda fuera del
+cambio del Repository.
+
+### 10.5 Mínimo funcional vs completo
+
+| Nivel    | Cambios                                                                         |
+|----------|---------------------------------------------------------------------------------|
+| Mínimo   | Tipo del field + `new` en cada Repo, y `ILIKE` → `LIKE`. Con eso compila y corre. |
+| Completo | Agregar corchetes `[User]`, actualizar los comentarios que mencionan Postgres, y dejar el script `setup_mssql.sql`. |
+
+### 10.6 Preguntas para discutir en clase
+
+1. Si las dos clases DB tienen la **misma API pública**, ¿por qué no
+   alcanza con cambiar una sola línea? ¿Qué partes del Repository son
+   "motor-dependientes" sin serlo a primera vista?
+2. ¿Qué pasaría si el Repository tuviera que funcionar contra los
+   **dos motores al mismo tiempo**? ¿Alcanza con una interfaz común
+   `IDb`? ¿Cómo elegimos el dialecto SQL en tiempo de ejecución?
+3. ¿Vale la pena diseñar para portabilidad desde el día 1, o conviene
+   casarse con un motor y migrar el día que haya que migrar? Relacionar
+   con KISS y YAGNI.
+4. Si mañana aparece un tercer motor (MySQL, SQLite), ¿qué tendríamos
+   que duplicar? ¿Qué parte del diseño actual no escala bien y qué
+   parte sí?
