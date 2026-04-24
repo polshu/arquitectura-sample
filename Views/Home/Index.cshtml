@@ -1,0 +1,124 @@
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<h1>Indeura — mini proyecto didactico</h1>
+
+<p>
+    Este sitio muestra el flujo completo de la arquitectura por capas:
+    <code>Controller &rarr; Service &rarr; Repository &rarr; DBPostgres &rarr; base</code>.
+</p>
+
+<p>
+    El proyecto expone <strong>dos formas paralelas</strong> de usar lo mismo,
+    asi se ve claro como se separan las capas de presentacion:
+</p>
+
+<div class="endpoint">
+    <h3>1) CRUD con MVC (pantallas HTML)</h3>
+    <p>
+        Alta, baja, modificacion y consulta de juegos con formularios HTML
+        "de toda la vida". El controller que las sirve es <code>GamesController</code>.
+        Cada POST redirige con el patron <em>Post-Redirect-Get</em>, asi un F5
+        no reenvia el form.
+    </p>
+    <a class="btn" href="/games">Abrir CRUD de juegos</a>
+</div>
+
+<div class="endpoint">
+    <h3>2) API JSON + Tester AJAX</h3>
+    <p>
+        Los mismos datos, pero expuestos como API JSON bajo <code>/api/games</code>
+        (controller <code>GamesApiController</code>). Se pueden invocar:
+    </p>
+    <ul>
+        <li>Desde la barra del navegador (solo los GET).</li>
+        <li>Desde <code>curl</code>, Postman o Insomnia (tambien POST).</li>
+        <li>Desde la <strong>pagina Tester</strong> que tenemos abajo, que usa
+            <code>fetch()</code> en JavaScript para llamar a los endpoints y
+            mostrar la respuesta en pantalla.</li>
+    </ul>
+    <a class="btn" href="/api-tester">Abrir tester AJAX</a>
+</div>
+
+<h2>Listado de endpoints API directos (GET navegables)</h2>
+
+<div class="endpoint">
+    <h3><span class="verb-get">GET</span> /api/games</h3>
+    <p>Lista de juegos publicos (<code>State != "Private"</code>).</p>
+    <a class="btn" href="/api/games">Probar</a>
+</div>
+
+<div class="endpoint">
+    <h3><span class="verb-get">GET</span> /api/games/all</h3>
+    <p>Lista completa, incluye los <code>Private</code>. Es el que usa el Index del CRUD.</p>
+    <a class="btn" href="/api/games/all">Probar</a>
+</div>
+
+<div class="endpoint">
+    <h3><span class="verb-get">GET</span> /api/games/details/{id}</h3>
+    <p>Un juego + los datos del publisher (orquestacion entre entidades).</p>
+    <a class="btn" href="/api/games/details/1">Probar con id=1</a>
+</div>
+
+<div class="endpoint">
+    <h3><span class="verb-get">GET</span> /api/games/search?name={texto}</h3>
+    <p>Busqueda por nombre parcial, case-insensitive (<code>ILIKE</code> de Postgres).</p>
+    <a class="btn" href="/api/games/search?name=sql">Probar con name=sql</a>
+</div>
+
+<div class="endpoint">
+    <h3><span class="verb-post">POST</span> /api/games/create</h3>
+    <p>
+        Alta con JSON body. Lo probas comodo desde <a href="/api-tester">/api-tester</a>,
+        o con <code>curl</code>:
+    </p>
+<pre>curl -X POST http://localhost:5042/api/games/create ^
+     -H "Content-Type: application/json" ^
+     -d "{\"GameName\":\"Mi juego\",\"Description\":\"Un RPG\",\"IdPublisher\":1,\"PriceUSD\":9.99,\"NumberOfAchievements\":0}"</pre>
+</div>
+
+<div class="endpoint">
+    <h3><span class="verb-get">GET</span> /api/games/steam/{appId}</h3>
+    <p>Info fake de Steam. AppIds cargados: 730, 570, 440.</p>
+    <p>
+        <a class="btn" href="/api/games/steam/730">730 — CS2</a>
+        <a class="btn" href="/api/games/steam/570">570 — Dota 2</a>
+        <a class="btn" href="/api/games/steam/440">440 — TF2</a>
+    </p>
+</div>
+
+<h2>Como esta armado el proyecto</h2>
+
+<pre>Controllers/
+  HomeController.cs              (landing + tester AJAX, solo renderiza vistas)
+  GamesController.cs             (CRUD MVC: lista/alta/edicion/borrado)
+  GamesApiController.cs          (API JSON: /api/games/*)
+
+Services/
+  GameService.cs, UserService.cs (reglas y orquestacion — compartido por ambos controllers)
+
+Infrastructure/
+  Email/EmailSenderFake.cs       (cliente externo: mail)
+  Steam/SteamInfoClient.cs       (cliente externo: API publica)
+  Persistence/
+    DBConfig.cs, DBPostgres.cs, DBMssql.cs         (ADO.NET crudo)
+    Repositories/GameRepository.cs, UserRepository.cs
+
+DTOs/
+  Input/GameCreateDto.cs         (alta)
+  Input/GameUpdateDto.cs         (edicion)
+  External/SteamGameInfoDto.cs   (respuesta de sistema externo)
+
+Models/
+  Game.cs, User.cs               (entidades POCO)
+
+Views/
+  Home/Index.cshtml              (esta pagina)
+  Home/ApiTester.cshtml          (tester AJAX)
+  Games/Index.cshtml             (lista CRUD)
+  Games/Details.cshtml, Create.cshtml, Edit.cshtml, Delete.cshtml</pre>
+
+<p>
+    Para el detalle largo de cada capa leer <code>ARQUITECTURA.md</code> en la raiz.
+</p>

@@ -1,0 +1,77 @@
+@model Game
+
+@{
+    ViewData["Title"] = "Detalle del juego";
+    User? publisher = ViewBag.Publisher as User;
+}
+
+@*
+    Details muestra un Game (el Model) + el User publisher (por ViewBag).
+    El Controller ya se ocupo de traerlos a ambos via GameService.GetPublisher,
+    que es un ejemplo de orquestacion entre entidades.
+*@
+
+<style>
+    dl.card { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 1rem 1.2rem; display: grid; grid-template-columns: 180px 1fr; gap: 0.4rem 1rem; margin-top: 0.8rem; }
+    dl.card dt { font-weight: 700; color: #444; }
+    dl.card dd { margin: 0; }
+    .pill { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 10px; font-size: 0.8rem; font-weight: 600; }
+    .pill.public { background: #e6f4e6; color: #1e6e1e; border: 1px solid #b0d8b0; }
+    .pill.private { background: #f4e6e6; color: #7a2a2a; border: 1px solid #d8b0b0; }
+    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    a.btn.secondary { background: #555; }
+    a.btn.danger { background: #b3332a; }
+</style>
+
+<h1>@Model.GameName</h1>
+
+<p>
+    <a href="/games">&larr; Volver a la lista</a>
+</p>
+
+<h2>Datos del juego</h2>
+<dl class="card">
+    <dt>Id</dt>                    <dd>@Model.Id</dd>
+    <dt>Nombre</dt>                <dd>@Model.GameName</dd>
+    <dt>Descripcion</dt>           <dd>@Model.Description</dd>
+    <dt>Fecha de publicacion</dt>  <dd>@Model.Date.ToString("yyyy-MM-dd HH:mm")</dd>
+    <dt>Cantidad de logros</dt>    <dd>@Model.NumberOfAchievements</dd>
+    <dt>Precio USD</dt>            <dd>@Model.PriceUSD.ToString("0.00")</dd>
+    <dt>Descuento</dt>             <dd>@Model.DiscountPercentage.ToString("0.##")%</dd>
+    <dt>Estado</dt>
+    <dd>
+        @if (Model.State == "Private")
+        {
+            <span class="pill private">@Model.State</span>
+        }
+        else
+        {
+            <span class="pill public">@Model.State</span>
+        }
+    </dd>
+</dl>
+
+<h2>Publisher</h2>
+@if (publisher == null)
+{
+    <p><em>No se encontro el publisher con Id @Model.IdPublisher. Quedo huerfano en la base?</em></p>
+}
+else
+{
+    <dl class="card">
+        <dt>Id</dt>              <dd>@publisher.Id</dd>
+        <dt>UserName</dt>        <dd>@publisher.UserName</dd>
+        <dt>Email</dt>           <dd>@publisher.Email</dd>
+        <dt>Descripcion</dt>     <dd>@publisher.Description</dd>
+        <dt>Verified</dt>        <dd>@(publisher.Verified ? "Si" : "No")</dd>
+        <dt>Followers</dt>       <dd>@publisher.Followers</dd>
+        <dt>Followed</dt>        <dd>@publisher.Followed</dd>
+        <dt>Games owned</dt>     <dd>@publisher.GamesOwned</dd>
+    </dl>
+}
+
+<div class="actions">
+    <a class="btn" href="/games/edit/@Model.Id">Editar</a>
+    <a class="btn danger" href="/games/delete/@Model.Id">Borrar</a>
+    <a class="btn secondary" href="/games">Volver</a>
+</div>

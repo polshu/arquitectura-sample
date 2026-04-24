@@ -1,0 +1,88 @@
+@model List<Game>
+
+@{
+    ViewData["Title"] = "CRUD de juegos";
+}
+
+@*
+    Lista TODOS los juegos (incluidos los Private). La logica del filtro vive
+    en el Service: esta vista solo muestra lo que recibe por Model.
+*@
+
+<style>
+    table.games { width: 100%; border-collapse: collapse; margin-top: 0.8rem; font-size: 0.95rem; }
+    table.games th, table.games td { border: 1px solid #ddd; padding: 0.5rem 0.7rem; text-align: left; }
+    table.games thead { background: #f1f1f1; }
+    table.games tbody tr:nth-child(even) { background: #fafafa; }
+    table.games .actions a { margin-right: 0.4rem; }
+    .pill { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 10px; font-size: 0.8rem; font-weight: 600; }
+    .pill.public { background: #e6f4e6; color: #1e6e1e; border: 1px solid #b0d8b0; }
+    .pill.private { background: #f4e6e6; color: #7a2a2a; border: 1px solid #d8b0b0; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-top: 1.2rem; }
+    a.btn.secondary { background: #555; }
+</style>
+
+<h1>CRUD de juegos</h1>
+
+<p>
+    Lista completa (incluye <code>Private</code>). Esta pantalla es MVC puro:
+    los links navegan a otras vistas, y cada form POSTea y redirige.
+    <a href="/">Volver al inicio</a>.
+</p>
+
+<div class="toolbar">
+    <span>Total: <strong>@Model.Count</strong> juego(s).</span>
+    <a class="btn" href="/games/create">+ Nuevo juego</a>
+</div>
+
+@if (Model.Count == 0)
+{
+    <p><em>No hay juegos cargados. Corriste el script de seed?</em></p>
+}
+else
+{
+    <table class="games">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nombre</th>
+                <th>Publisher</th>
+                <th>Fecha</th>
+                <th>Logros</th>
+                <th>Precio</th>
+                <th>Desc. %</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Game game in Model)
+            {
+                <tr>
+                    <td>@game.Id</td>
+                    <td>@game.GameName</td>
+                    <td>@game.IdPublisher</td>
+                    <td>@game.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@game.NumberOfAchievements</td>
+                    <td>@game.PriceUSD.ToString("0.00")</td>
+                    <td>@game.DiscountPercentage.ToString("0.##")</td>
+                    <td>
+                        @if (game.State == "Private")
+                        {
+                            <span class="pill private">@game.State</span>
+                        }
+                        else
+                        {
+                            <span class="pill public">@game.State</span>
+                        }
+                    </td>
+                    <td class="actions">
+                        <a href="/games/details/@game.Id">Ver</a>
+                        <a href="/games/edit/@game.Id">Editar</a>
+                        <a href="/games/delete/@game.Id">Borrar</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

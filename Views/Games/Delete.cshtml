@@ -1,0 +1,48 @@
+@model Game
+
+@{
+    ViewData["Title"] = "Borrar juego";
+}
+
+@*
+    Pantalla de confirmacion de borrado. Buena practica: nunca borramos con
+    un simple GET (un link que accidentalmente se previsualiza, un bot que
+    sigue URLs, etc. podrian disparar un DELETE). En MVC clasico siempre se
+    muestra una pantalla de confirmacion y el borrado real se hace con POST.
+*@
+
+<style>
+    dl.card { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 1rem 1.2rem; display: grid; grid-template-columns: 180px 1fr; gap: 0.4rem 1rem; margin-top: 0.8rem; }
+    dl.card dt { font-weight: 700; color: #444; }
+    dl.card dd { margin: 0; }
+    .warning { background: #fff5e6; border: 1px solid #f0d9a8; color: #7a5a1a; padding: 0.8rem 1rem; border-radius: 4px; margin-top: 0.8rem; }
+    form.danger { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    form.danger button { background: #b3332a; color: #fff; border: 0; padding: 0.55rem 1.4rem; border-radius: 4px; cursor: pointer; font-size: 0.95rem; }
+    form.danger button:hover { background: #d04a3f; }
+    a.btn.secondary { background: #555; }
+</style>
+
+<h1>Borrar juego</h1>
+
+<p>
+    <a href="/games">&larr; Volver a la lista</a>
+</p>
+
+<div class="warning">
+    <strong>Cuidado:</strong> estas por borrar este juego de forma permanente.
+    Esta accion no se puede deshacer.
+</div>
+
+<dl class="card">
+    <dt>Id</dt>                <dd>@Model.Id</dd>
+    <dt>Nombre</dt>            <dd>@Model.GameName</dd>
+    <dt>Descripcion</dt>       <dd>@Model.Description</dd>
+    <dt>Publisher</dt>         <dd>@Model.IdPublisher</dd>
+    <dt>Fecha</dt>             <dd>@Model.Date.ToString("yyyy-MM-dd HH:mm")</dd>
+    <dt>Estado</dt>            <dd>@Model.State</dd>
+</dl>
+
+<form class="danger" method="post" action="/games/delete/@Model.Id">
+    <button type="submit">Si, borrar</button>
+    <a class="btn secondary" href="/games/details/@Model.Id">Cancelar</a>
+</form>

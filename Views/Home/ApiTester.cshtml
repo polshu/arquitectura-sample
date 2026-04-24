@@ -1,0 +1,227 @@
+@{
+    ViewData["Title"] = "API Tester (AJAX)";
+}
+
+@*
+    Esta vista es HTML + JavaScript puro. No tiene Model ni @@foreach: todos
+    los datos que aparecen en pantalla los trae JavaScript desde la API.
+
+    Cada "tarjeta" (.tester) representa un endpoint de /api/games.
+    El flujo es siempre el mismo:
+      1) el usuario llena los inputs (si hay)
+      2) apreta un boton
+      3) se ejecuta fetch(URL) y se muestra la respuesta en un <pre>
+
+    Esto demuestra que la API se puede consumir desde cualquier cliente:
+    un <form> con JS, curl, Postman, una app mobile, etc.
+*@
+
+<style>
+    .tester { border: 1px solid #ddd; border-radius: 6px; padding: 0.9rem 1.2rem; margin: 1.2rem 0; background: #fafafa; }
+    .tester h3 { margin: 0 0 0.4rem 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1rem; }
+    .tester .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.6rem; }
+    .tester label { font-weight: 600; font-size: 0.9rem; }
+    .tester input { padding: 0.35rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+    .tester button { background: #2a7f2a; color: #fff; border: 0; padding: 0.4rem 1rem; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .tester button:hover { background: #3a9f3a; }
+    .tester .response { margin-top: 0.8rem; background: #1e1e1e; color: #dcdcdc; padding: 0.8rem 1rem; border-radius: 4px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; max-height: 320px; overflow: auto; white-space: pre-wrap; display: none; }
+    .tester .response.ok { border-left: 4px solid #2a7f2a; display: block; }
+    .tester .response.error { border-left: 4px solid #b3332a; display: block; }
+
+    form.create-api { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 1rem 1.2rem; }
+    form.create-api label { display: block; margin-top: 0.6rem; font-weight: 600; font-size: 0.9rem; }
+    form.create-api input, form.create-api textarea { width: 100%; box-sizing: border-box; padding: 0.4rem 0.6rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 4px; }
+    form.create-api textarea { min-height: 60px; resize: vertical; }
+    form.create-api button { margin-top: 1rem; background: #b35900; color: #fff; border: 0; padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.95rem; }
+    form.create-api button:hover { background: #d06d00; }
+</style>
+
+<h1>API Tester (AJAX)</h1>
+
+<p>
+    Cada tarjeta llama a un endpoint de <code>/api/games</code> usando
+    <code>fetch()</code> y muestra la respuesta cruda en un bloque negro.
+    La API esta implementada en <code>GamesApiController</code>.
+    <a href="/">Volver al inicio</a>.
+</p>
+
+<!-- ================================================================ -->
+<!-- GET /api/games                                                   -->
+<!-- ================================================================ -->
+<div class="tester">
+    <h3><span class="verb-get">GET</span> /api/games</h3>
+    <p>Lista de juegos publicos.</p>
+    <div class="row">
+        <button type="button" data-action="getPublic">Llamar</button>
+    </div>
+    <pre class="response" id="resp-public"></pre>
+</div>
+
+<!-- ================================================================ -->
+<!-- GET /api/games/all                                               -->
+<!-- ================================================================ -->
+<div class="tester">
+    <h3><span class="verb-get">GET</span> /api/games/all</h3>
+    <p>Lista completa (incluye <code>Private</code>).</p>
+    <div class="row">
+        <button type="button" data-action="getAll">Llamar</button>
+    </div>
+    <pre class="response" id="resp-all"></pre>
+</div>
+
+<!-- ================================================================ -->
+<!-- GET /api/games/details/{id}                                      -->
+<!-- ================================================================ -->
+<div class="tester">
+    <h3><span class="verb-get">GET</span> /api/games/details/{id}</h3>
+    <p>Un juego + su publisher.</p>
+    <div class="row">
+        <label for="details-id">Id:</label>
+        <input type="number" id="details-id" value="1" min="1" />
+        <button type="button" data-action="getDetails">Llamar</button>
+    </div>
+    <pre class="response" id="resp-details"></pre>
+</div>
+
+<!-- ================================================================ -->
+<!-- GET /api/games/search?name=...                                   -->
+<!-- ================================================================ -->
+<div class="tester">
+    <h3><span class="verb-get">GET</span> /api/games/search?name=...</h3>
+    <p>Busqueda por nombre parcial.</p>
+    <div class="row">
+        <label for="search-name">Nombre:</label>
+        <input type="text" id="search-name" value="sql" />
+        <button type="button" data-action="getSearch">Llamar</button>
+    </div>
+    <pre class="response" id="resp-search"></pre>
+</div>
+
+<!-- ================================================================ -->
+<!-- GET /api/games/steam/{appId}                                     -->
+<!-- ================================================================ -->
+<div class="tester">
+    <h3><span class="verb-get">GET</span> /api/games/steam/{appId}</h3>
+    <p>Info del fake de Steam. AppIds cargados: 730, 570, 440.</p>
+    <div class="row">
+        <label for="steam-id">AppId:</label>
+        <input type="number" id="steam-id" value="730" min="1" />
+        <button type="button" data-action="getSteam">Llamar</button>
+    </div>
+    <pre class="response" id="resp-steam"></pre>
+</div>
+
+<!-- ================================================================ -->
+<!-- POST /api/games/create                                           -->
+<!-- ================================================================ -->
+<div class="tester">
+    <h3><span class="verb-post">POST</span> /api/games/create</h3>
+    <p>
+        Alta de juego. El body va como JSON (el controller lo bindea con
+        <code>[FromBody]</code>).
+    </p>
+
+    <form class="create-api" id="create-form">
+        <label for="api-GameName">Nombre</label>
+        <input type="text" id="api-GameName" required value="Juego desde AJAX" />
+
+        <label for="api-Description">Descripcion</label>
+        <textarea id="api-Description">Creado desde la pagina /api-tester.</textarea>
+
+        <label for="api-IdPublisher">Id del publisher</label>
+        <input type="number" id="api-IdPublisher" min="1" value="1" required />
+
+        <label for="api-PriceUSD">Precio USD</label>
+        <input type="number" id="api-PriceUSD" step="0.01" min="0" value="4.99" />
+
+        <label for="api-NumberOfAchievements">Cantidad de logros</label>
+        <input type="number" id="api-NumberOfAchievements" min="0" value="0" />
+
+        <button type="submit">Enviar POST</button>
+    </form>
+
+    <pre class="response" id="resp-create"></pre>
+</div>
+
+<script>
+    // Helper: muestra la respuesta en el <pre> dado, con estilo "ok" o "error".
+    function showResponse(responseElement, ok, text) {
+        responseElement.className = ok ? "response ok" : "response error";
+        responseElement.textContent = text;
+    }
+
+    // Helper: hace el fetch, lee el body como texto y trata de parsearlo
+    // como JSON para mostrarlo indentado. Si no es JSON, muestra el texto crudo.
+    async function callApi(url, options, responseElement) {
+        responseElement.className = "response ok";
+        responseElement.textContent = "Cargando...";
+
+        try {
+            var response = await fetch(url, options);
+            var text = await response.text();
+
+            var pretty = text;
+            try {
+                var asJson = JSON.parse(text);
+                pretty = JSON.stringify(asJson, null, 2);
+            } catch (ignored) {
+                // La respuesta no era JSON (ej: 404 con texto plano). La dejamos tal cual.
+            }
+
+            var header = response.status + " " + response.statusText + "\n\n";
+            showResponse(responseElement, response.ok, header + pretty);
+        } catch (networkError) {
+            showResponse(responseElement, false, "Fallo de red: " + networkError.message);
+        }
+    }
+
+    // Atamos los botones con data-action. Asi cada uno arma su URL y llama
+    // al helper. Mantener la logica corta y en un solo lugar ayuda a que se
+    // vea claro cual es el patron repetido.
+    document.addEventListener("click", function (event) {
+        var action = event.target.getAttribute("data-action");
+        if (!action) {
+            return;
+        }
+
+        if (action === "getPublic") {
+            callApi("/api/games", { method: "GET" }, document.getElementById("resp-public"));
+        }
+        else if (action === "getAll") {
+            callApi("/api/games/all", { method: "GET" }, document.getElementById("resp-all"));
+        }
+        else if (action === "getDetails") {
+            var id = document.getElementById("details-id").value;
+            callApi("/api/games/details/" + id, { method: "GET" }, document.getElementById("resp-details"));
+        }
+        else if (action === "getSearch") {
+            var name = encodeURIComponent(document.getElementById("search-name").value);
+            callApi("/api/games/search?name=" + name, { method: "GET" }, document.getElementById("resp-search"));
+        }
+        else if (action === "getSteam") {
+            var appId = document.getElementById("steam-id").value;
+            callApi("/api/games/steam/" + appId, { method: "GET" }, document.getElementById("resp-steam"));
+        }
+    });
+
+    // El submit del form de POST lo manejamos aparte porque tiene body.
+    document.getElementById("create-form").addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        var body = {
+            GameName: document.getElementById("api-GameName").value,
+            Description: document.getElementById("api-Description").value,
+            IdPublisher: parseInt(document.getElementById("api-IdPublisher").value, 10),
+            PriceUSD: parseFloat(document.getElementById("api-PriceUSD").value),
+            NumberOfAchievements: parseInt(document.getElementById("api-NumberOfAchievements").value, 10)
+        };
+
+        var options = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        };
+
+        callApi("/api/games/create", options, document.getElementById("resp-create"));
+    });
+</script>
