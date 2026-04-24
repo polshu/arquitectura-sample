@@ -17,6 +17,8 @@ agregando carpetas y conceptos a medida que el código los pida.
 
 ## 1. Panorama general
 
+![Diagrama de la arquitectura por capas](arquitectura.png)
+
 ```
   Presentation / Controller        ← recibe el request HTTP y devuelve la respuesta
         │
