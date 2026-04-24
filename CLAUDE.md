@@ -94,4 +94,4 @@ En `UserService` hay dos metodos casi identicos que **estan a proposito distinto
 
 ## Doc adicional
 
-`ARQUITECTURA.md` tiene la explicacion larga para el alumno: definicion detallada de cada capa, donde poner orquestadores (Services de nivel superior tipo `PurchaseService`), cuando introducir DTOs y la nomenclatura estandar de carpetas de la industria (Domain / Application / Infrastructure / Presentation) comparada contra la que usamos aca.
+`README.md` tiene la explicacion larga para el alumno: definicion detallada de cada capa, donde poner orquestadores (Services de nivel superior tipo `PurchaseService`), cuando introducir DTOs y la nomenclatura estandar de carpetas de la industria (Domain / Application / Infrastructure / Presentation) comparada contra la que usamos aca.

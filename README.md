@@ -686,6 +686,6 @@ Views/
 appsettings.json                   ← connection strings Postgres + SQL Server
 Properties/launchSettings.json     ← perfiles http/https y puertos
 Indeura.sln, proyect.csproj        ← solución y proyecto .NET
-ARQUITECTURA.md                    ← este archivo
+README.md                          ← este archivo
 CLAUDE.md                          ← instrucciones para Claude Code
 ```
